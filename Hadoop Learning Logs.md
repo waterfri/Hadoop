@@ -2,6 +2,24 @@
 
 started from 2024.12.27
 
+
+
+**学习时间分配建议**
+
+
+
+**阶段**	**内容**	**时间建议**
+
+基础知识	分布式计算与 Hadoop 入门	2 天 
+
+核心组件	HDFS、MapReduce、YARN	5-7 天
+
+Hadoop 生态系统	Hive、HBase、Sqoop 等工具学习	5 天
+
+高级优化与安全	集群优化、容错与监控	3 天
+
+实践项目	实现至少 1 个综合性小项目	3-5 天
+
 ## What is Hadoop?
 
 **什么是 Hadoop？**
@@ -545,6 +563,18 @@ ssh-copy-id user@hostname
 
 ### **2.1 HDFS（Hadoop Distributed File System）**
 
+**HDFS** 是 Hadoop 的 **分布式文件系统**，负责存储大规模数据
+
+**与 MapReduce 和 YARN 的关系**
+
+​	•	**存储 MapReduce 输入和输出数据**：MapReduce 需要依赖 HDFS 提供数据存储功能。
+
+​	•	**共享文件系统**：YARN 和其他分布式计算框架都可以直接使用 HDFS 作为底层存储。
+
+---
+
+
+
 #### 2.1.1 HDFS 结构
 
 ​	•	NameNode 和 DataNode 的角色及功能
@@ -595,7 +625,9 @@ HDFS 将每个文件切分成固定大小的数据块（默认是 **128MB** 或 
 
 ---
 
-#### 2.2.2 HDFS 工作原理
+
+
+#### 2.1.2 HDFS 工作原理
 
 HDFS 的工作原理包括文件的读写流程、心跳机制和副本的分布策略等方面。理解这些原理有助于深入掌握 HDFS 的工作方式。
 
@@ -639,13 +671,17 @@ HDFS 通过副本机制保证数据的高可用性。如果某个 DataNode 故�
 
 ---
 
-#### 2.2.3 HDFS 操作
+
+
+#### 2.1.3 HDFS 操作
 
 ​	•	使用命令行操作 HDFS（上传、下载、删除文件）
 
 HDFS 的路径管理必须通过 Hadoop 的命令行工具完成，而不是通过直接操作本地文件系统。
 
-HDFS 的目录是 Hadoop 分布式文件系统中的虚拟路径，而不是本地文件系统的路径。HDFS 目录是在 Hadoop 的文件系统中创建的，跟本地的文件系统目录（如 etc 文件夹）没有直接关系。
+HDFS 的目录是 Hadoop 分布式文件系统中的**虚拟路径**，而不是本地文件系统的路径。HDFS 目录是在 Hadoop 的文件系统中创建的，跟本地的文件系统目录（如 etc 文件夹）没有直接关系。
+
+HDFS 的路径操作其实是在虚拟目录结构中进行的。这些路径和目录是用户与 HDFS 系统交互时使用的接口，它们是由 **Namenode** 管理的逻辑结构。文件的实际数据则被分割成多个块，并存储在 HDFS 中不同节点的 DataNode 上。路径命令所操作的目录并不是物理存在的，而是 HDFS 的元数据系统的一部分，帮助用户高效地管理和访问数据。
 
 ---
 
@@ -656,6 +692,9 @@ HDFS 的目录是 Hadoop 分布式文件系统中的虚拟路径，而不是本�
 常用命令
 
 ```bash
+# 显示 /user/hadoop 目录下的所有文件和子目录
+hdfs dfs -ls /user/hadoop
+
 # 查看 HDFS 文件或目录内容
 hadoop fs -ls /hdfs_dir/
 
@@ -765,35 +804,645 @@ hadoop fs -mkdir /
 
 ### **2.2 MapReduce**
 
-​	•	**MapReduce 编程模型**
+**MapReduce** 是 Hadoop 的 **分布式计算框架**，用于处理大规模数据集
 
-​	•	Map 阶段：键值对的映射处理
+**与 HDFS 和 YARN 的关系**
 
-​	•	Reduce 阶段：分组与聚合
+​	•	**依赖 HDFS：** MapReduce 的输入和输出数据都存储在 HDFS 中。
 
-​	•	Shuffle 阶段：中间数据的排序与分区
+​	•	**依赖 YARN：** MapReduce 使用 YARN 来管理计算资源（如 CPU 和内存），分配任务并监控任务执行。
 
-​	•	**MapReduce 案例**
+---
 
-​	•	单词计数（Word Count）
+#### 2.2.1 MapReduce 架构
 
-​	•	数据排序（Sorting）
+MapReduce 的核心架构由以下组件组成：
 
-​	•	数据去重（Deduplication）
+**1.1 JobTracker 和 TaskTracker （经典架构，仅 Hadoop 1 使用）**
 
-​	•	**MapReduce 的性能优化**
+​	•	**JobTracker**：负责管理 MapReduce 作业。
 
-​	•	自定义分区器（Partitioner）
+​	•	接收作业提交请求。
 
-​	•	自定义排序器（Comparator）
+​	•	负责作业分解为任务，并分配给 TaskTracker。
 
-​	•	Combiner 的使用
+​	•	监控任务执行状态，处理失败任务。
 
-​	•	输入输出格式（InputFormat/OutputFormat）
+​	•	**TaskTracker**：负责执行任务。
+
+​	•	接收 JobTracker 分配的任务。
+
+​	•	定期向 JobTracker 报告心跳和任务状态。
+
+​	Hadoop 2 开始由 **YARN** 取代 JobTracker 和 TaskTracker。
+
+**1.2 YARN 架构 （Hadoop 2+ 使用）**
+
+在 YARN 架构中，MapReduce 作业运行时的管理由以下组件负责：
+
+​	•	**ResourceManager**：管理集群资源。
+
+​	•	负责分配计算资源给各个作业。
+
+​	•	**NodeManager**：负责每个节点的任务执行和资源管理。
+
+​	•	**ApplicationMaster**：为每个 MapReduce 作业启动一个 AM 进程，负责具体作业的任务调度和监控。
+
+---
 
 
+
+#### 2.2.2 MapReduce 工作原理
+
+​	•	**1. MapReduce 编程模型**
+
+MapReduce 是一种编程模型和分布式计算框架，用于大规模数据处理。它的核心思想是将任务分为两个阶段：
+
+​	•	**Map 阶段**：将输入数据**处理为键值对**的形式。
+
+​	•	**Reduce 阶段**：对 Map 输出的键值对进行**分组和聚合**，生成最终结果。
+
+每个 Map 和 Reduce 阶段通常由开发者实现具体逻辑，而 MapReduce 框架负责调度、分配资源、容错和数据传输。
+
+---
+
+​	•	**2. 输入与输出：键值对的处理**
+
+**输入数据格式**：
+
+​	•	MapReduce 的输入数据通常以键值对的形式存在，键为偏移量（默认情况下），值为输入数据的每一行。
+
+​	•	开发者可以自定义输入格式（InputFormat）以适应特定数据需求。
+
+**输出数据格式**：
+
+​	•	Map 阶段输出为一组新的键值对，供 Shuffle 和 Reduce 阶段处理。
+
+​	•	Reduce 阶段最终生成结果的键值对，存储在 HDFS 或其他目标存储中。
+
+示例：
+
+输入文件：
+
+`hello world
+hello Hadoop`
+
+Map输出：
+
+`(hello, 1)
+(world, 1)
+(hello, 1)
+(Hadoop, 1)`
+
+Reduce输出：
+
+`(hello, 2)
+(world, 1)
+(Hadoop, 1)`
+
+---
+
+**Map 阶段：键值对的映射处理**
+
+​	1.	**任务**：
+
+​	•	每个输入分片（Split）被分配给一个 Map Task。
+
+​	•	Map Task 将每条输入记录转换为零个或多个键值对。
+
+​	2.	**逻辑**：
+
+​	•	Map 函数由开发者实现（继承自 Mapper 类）。
+
+​	•	输出的键值对被缓存在内存中，随后写入本地磁盘，供 Shuffle 阶段使用。
+
+---
+
+**Shuffle 阶段：中间数据的排序与分区**
+
+​	1.	**任务**：
+
+​	•	收集所有 Map 阶段的输出数据，按键进行排序和分区。
+
+​	•	不同分区的数据被分发到相应的 Reduce Task。
+
+​	2.	**过程**：
+
+​	•	**排序**：中间键值对按键进行排序（字典序）。
+
+​	•	**分区**：根据自定义或默认的分区器（Partitioner），将相同键值对分配到同一分区。
+
+---
+
+**Reduce 阶段：分组与聚合**
+
+​	1.	**任务**：
+
+​	•	对每个分区中的键值对进行分组，执行聚合逻辑。
+
+​	•	Reduce 函数由开发者实现（继承自 Reducer 类）。
+
+​	2.	**逻辑**：
+
+​	•	接收由 Shuffle 阶段分组后的键值对。
+
+​	•	执行逻辑操作，例如求和、统计、排序等。
+
+---
+
+​	•	**3. MapReduce 执行流程**
+
+​	•	Job 提交 → 切分任务 → 分发 Map 和 Reduce → 最终输出
+
+​	1.	**Job 提交**：
+
+​	•	客户端将 Job 提交给 ResourceManager。
+
+​	•	包括 Jar 包、配置文件和输入数据路径。
+
+​	2.	**任务切分**：
+
+​	•	将输入数据切分为多个 Splits，每个 Split 通常为一个 HDFS 块（默认 128 MB）。
+
+​	3.	**分发任务**：
+
+​	•	ResourceManager 分配 Map 和 Reduce 任务。
+
+​	•	NodeManager 在节点上启动 Task。
+
+​	4.	**执行任务**：
+
+​	•	Map Task 处理输入 Splits，生成中间键值对。
+
+​	•	Shuffle 阶段排序并分发数据。
+
+​	•	Reduce Task 聚合数据并生成最终结果。
+
+​	5.	**输出结果**：
+
+​	•	Reduce 阶段的结果存储在 HDFS 中。
+
+---
+
+​	•	**4. MapReduce 的容错机制**
+
+​	•	Map/Reduce 任务的重试与数据恢复
+
+**Map/Reduce 任务的重试**：
+
+​	•	如果任务失败，框架会在另一个节点上重新运行该任务。
+
+​	•	默认情况下，每个任务最多重试 4 次（可配置）。
+
+**数据恢复**：
+
+​	•	MapReduce 使用 HDFS 的副本机制保证数据可靠性。
+
+​	•	任务的中间数据存储在本地磁盘，失败时可重用 HDFS 原始数据重新计算。
+
+---
+
+
+
+#### 2.2.3 MapReduce 操作
+
+**MapReduce 的使用流程**
+
+MapReduce 的使用流程主要是：**准备需求 → 编写程序 → 上传数据 → 提交作业 → 查看结果 → 分析日志**
+
+**1. 准备工作**
+
+​	1.	**确定需求**
+
+确定要实现的任务逻辑（例如：单词计数、排序、去重等）。
+
+​	2.	**准备环境**
+
+​	•	Hadoop 集群已搭建并正常运行。
+
+​	•	输入数据已上传到 HDFS。
+
+**2. 编写 MapReduce 程序**
+
+​	1.	**编写 Mapper 类**
+
+定义 Map 阶段逻辑，处理输入数据并输出中间键值对 (key, value)。
+
+​	2.	**编写 Reducer 类**
+
+定义 Reduce 阶段逻辑，对中间键值对按键分组，并生成最终结果。
+
+​	3.	**编写 Driver 类**
+
+用于配置和提交 MapReduce 作业。
+
+​	4.	**编译打包程序**
+
+你的 Java MapReduce 程序需要被编译成 .class 文件，并打包成 .jar 文件。
+
+打包可以使用 Maven、Gradle 或手动 javac 和 jar 命令完成。
+
+**3. 提交 MapReduce 作业**
+
+**准备数据**
+
+将输入数据上传到 HDFS：
+
+```bash
+hadoop fs -mkdir /input
+
+hadoop fs -put input.txt /input
+```
+
+**提交作业**
+
+使用 hadoop jar 命令提交作业：
+
+```bash
+hadoop jar WordCount.jar WordCountDriver /input /output
+```
+
+**4. 查看结果**
+
+​	1.	**查看输出文件**
+
+输出结果存储在 HDFS 的 /output 目录下：
+
+```bash
+hadoop fs -cat /output/part-r-00000
+```
+
+​	2.	**下载到本地**
+
+如果需要将结果下载到本地：
+
+```bash
+hadoop fs -get /output/part-r-00000 ./result.txt
+```
+
+**5. 分析日志**
+
+​	1.	**实时查看日志**
+
+提交作业时，控制台会显示作业的进度日志，包含：
+
+​	•	Map 和 Reduce 任务的执行进度。
+
+​	•	作业是否成功完成。
+
+​	2.	**查看详细日志**
+
+​	•	**使用 Yarn**：
+
+```bash
+yarn logs -applicationId <application_id>
+```
+
+​	•	**查看历史记录**（需要启动 JobHistory Server）。
+
+**6. 验证结果**
+
+​	1.	验证输出结果是否符合预期。
+
+​	2.	如果结果有误，可以调试代码或查看日志分析问题。
+
+---
+
+
+
+#### **2.2.4 实践案例**
+
+​	•	**单词计数（Word Count）**
+
+实现代码详见 WordCount.java
+
+**手动配置演示**
+
+首先需要创建一个这样的项目目录结构
+
+```bash
+WordCountProject/
+├── src/
+│   ├── WordCount.java
+├── bin/     # （编译后的 .class 文件）
+```
+
+以下是详细的步骤：
+
+**1. 检查 Hadoop 安装目录**
+
+在手动配置过程中，首先需要找到你的 Hadoop 安装目录。假设你已经安装了 Hadoop，可以通过以下命令检查 Hadoop 的位置：
+
+```bash
+echo $HADOOP_HOME
+```
+
+
+
+**2. 收集所需的 JAR 文件**
+
+Hadoop 的 Java 程序依赖多个 JAR 文件。以下是常用的依赖 JAR 文件位置：
+
+​	•	**Hadoop 通用依赖**：$HADOOP_HOME/share/hadoop/common/
+
+​	•	**MapReduce 客户端依赖**：$HADOOP_HOME/share/hadoop/mapreduce/
+
+​	•	**HDFS 依赖**：$HADOOP_HOME/share/hadoop/hdfs/
+
+**需要的关键 JAR 文件：**
+
+​	•	hadoop-common-<version>.jar
+
+​	•	hadoop-mapreduce-client-core-<version>.jar
+
+​	•	hadoop-hdfs-<version>.jar
+
+
+
+将以上 JAR 文件拷贝到项目的 lib 文件夹中。例如：
+
+```bash
+mkdir -p ~/WordCountProject/lib # 创建 lib 文件夹
+
+cp $HADOOP_HOME/share/hadoop/common/hadoop-common-*.jar ~/WordCountProject/lib
+
+cp $HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-client-core-*.jar ~/WordCountProject/lib
+
+cp $HADOOP_HOME/share/hadoop/hdfs/hadoop-hdfs-*.jar ~/WordCountProject/lib
+```
+
+
+
+**3. 设置 CLASSPATH**
+
+CLASSPATH 是一个环境变量，指定了 Java 在运行和编译时如何查找类文件（.class）以及外部库（.jar）。没有正确设置 CLASSPATH，Java 无法找到项目依赖的 JAR 包，从而导致 import 语句的红线或运行时错误。
+
+**不设置 CLASSPATH**
+
+​	•	每次编译和运行都需要手动指定 -classpath
+
+**全局设置 CLASSPATH **
+
+​	•	方便管理项目，避免重复设置。
+
+​	•	让系统知道所有外部依赖的路径，尤其是当项目需要大量依赖时。
+
+---
+
+手动为项目设置 CLASSPATH，以便编译时可以找到依赖的 JAR 文件。
+
+在终端中执行以下命令：
+
+```bash
+export CLASSPATH=$(find ~/WordCountProject/lib -name "*.jar" | tr '\n' ':'):$CLASSPATH
+```
+
+这会将 lib 文件夹中所有 JAR 文件添加到 CLASSPATH 中。
+
+使用Vscode时
+
+在项目的 VSCode 设置中，**需要手动添加依赖路径**：
+
+​	•	打开 VSCode 的 **设置（Settings）**。
+
+​	•	搜索 java.project.referencedLibraries。
+
+​	•	点击 **Edit in settings.json**，然后添加依赖路径
+
+```json
+{
+  "java.project.referencedLibraries": [
+    "lib/*.jar" // 这里修改为要用的 Hadoop 的 jar包所在的绝对路径
+  ]
+}
+```
+
+---
+
+**Vscode Tips**
+
+---
+
+VSCode 中的设置文件有几种不同的层级：
+
+​	1.	**用户设置（User Settings）**：这些设置对所有 VSCode 项目和工作区有效。它们存储在全局配置文件中。
+
+​	2.	**工作区设置（Workspace Settings）**：这些设置仅对当前工作区（即当前项目）有效。它们存储在工作区的 .vscode/settings.json 文件中。
+
+​	3.	**文件夹设置（Folder Settings）**：这些设置仅对特定文件夹有效，适用于更复杂的多根工作区配置。
+
+因此，当你修改 settings.json 文件时，如果它位于 .vscode 文件夹下，那么它只会影响当前打开的项目（工作区）。而如果你想要对所有项目生效，你可以修改 **用户设置**。
+
+**如何让设置对所有项目生效？**
+
+要让设置对所有项目有效，你需要在 **用户设置** 中配置，而不是在工作区的 settings.json 中。
+
+**修改用户设置：**
+
+​	1.	打开 VSCode，点击左下角的齿轮图标（设置按钮）。
+
+​	2.	选择 **Settings**（设置）。
+
+​	3.	在右上角的搜索框中，输入 settings.json，并点击 **Edit in settings.json**（在 settings.json 中编辑）。
+
+​	4.	在 settings.json 中添加或修改配置项（这时修改的设置会对所有工作区生效）。
+
+例如，你可以添加如下配置：
+
+```json
+{
+ "java.project.referencedLibraries": [
+  "lib/**/*.jar"
+ ]
+}
+```
+
+**如何让 settings.json 只对某个特定工作区有效？**
+
+如果你只希望设置对当前项目有效，就需要在该项目的 .vscode/settings.json 文件中进行配置。例如：
+
+```json
+{
+ "java.project.referencedLibraries": [
+  "lib/**/*.jar"
+ ]
+}
+```
+
+**总结**
+
+​	•	settings.json 文件位于 .vscode 文件夹下时，设置对当前项目有效。
+
+​	•	若要设置全局生效，修改 **用户设置**。
+
+---
+
+
+
+**4. 编译 Java 程序**
+
+---
+
+**Tips：** 确保在重新编译之前清理 classes 目录，这样可以避免老的编译结果和不必要的文件结构干扰。
+
+---
+
+确保 WordCount.java 文件在 src 文件夹下，例如：
+
+~/WordCountProject/src/WordCount.java
+
+
+
+**编译命令：**
+
+使用 javac 命令编译代码，并将 .class 文件输出到 classes 目录：
+
+```bash
+mkdir -p ~/WordCountProject/classes
+
+javac -d ~/WordCountProject/classes ~/WordCountProject/src/WordCount.java
+```
+
+当编译 src/WordCount.java 文件时，javac 会按照 src 中的包结构生成相应的目录层级，并将 .class 文件输出到指定的目录。
+
+如果希望 .class 文件直接放在 classes 目录下，而不保留源代码的包结构，可以将源文件中去掉包声明，或者使用 -d 参数结合适当的目录结构。
+
+现在的目录结构：
+
+```bash
+WordCountProject
+.
+├── bin
+├── classes
+│   └── WordCountProject
+│       └── src
+│           ├── WordCount$WordMapper.class
+│           ├── WordCount$WordReducer.class
+│           └── WordCount.class
+├── lib
+│   ├── hadoop-common-3.4.1-tests.jar
+│   ├── hadoop-common-3.4.1.jar
+│   ├── hadoop-hdfs-3.4.1-tests.jar
+│   ├── hadoop-hdfs-3.4.1.jar
+│   ├── hadoop-hdfs-client-3.4.1-tests.jar
+│   ├── hadoop-hdfs-client-3.4.1.jar
+│   ├── hadoop-hdfs-httpfs-3.4.1.jar
+│   ├── hadoop-hdfs-native-client-3.4.1-tests.jar
+│   ├── hadoop-hdfs-native-client-3.4.1.jar
+│   ├── hadoop-hdfs-nfs-3.4.1.jar
+│   ├── hadoop-hdfs-rbf-3.4.1-tests.jar
+│   ├── hadoop-hdfs-rbf-3.4.1.jar
+│   └── hadoop-mapreduce-client-core-3.4.1.jar
+└── src
+    └── WordCount.java
+
+7 directories, 17 files
+```
+
+
+
+**5. 打包 JAR 文件**
+
+将编译好的 .class 文件打包为 JAR 文件，以便提交到 Hadoop 集群。
+
+**打包命令：**
+
+```bash
+cd ~/WordCountProject/classes
+jar -cvf wordcount.jar *
+```
+
+这会在 classes 文件夹中生成 wordcount.jar 文件。
+
+
+
+**6. 运行 MapReduce 程序**
+
+将打包好的 wordcount.jar 文件提交到 Hadoop 集群运行。
+
+**运行命令：**
+
+```bash
+hadoop jar ~/WordCountProject/classes/wordcount.jar WordCount <input_path> <output_path>
+```
+
+​	•	<input_path> 是 HDFS 上的输入文件路径。
+
+​	•	<output_path> 是 HDFS 上的输出路径。
+
+
+
+例如：
+
+hadoop jar ~/WordCountProject/classes/wordcount.jar WordCount /user/ssc/input /user/ssc/output
+
+
+
+**7. 检查结果**
+
+输出结果会保存在 HDFS 的 <output_path> 目录下，可以通过以下命令查看结果文件：
+
+hadoop fs -ls /user/ssc/output
+
+hadoop fs -cat /user/ssc/output/part-r-00000
+
+
+
+**总结**
+
+手动配置虽然稍微复杂，但可以灵活控制项目依赖。以上步骤包括依赖收集、CLASSPATH 设置、编译、打包和运行的完整流程。
+
+---
+
+
+
+​	•	**数据排序（Sorting）**
+
+​	•	**数据去重（Deduplication）**
+
+​	•	**Top N 问题**
+
+​	•	**倒排索引**
+
+---
+
+
+
+#### 2.2.5 性能优化
+
+​	•	**自定义分区器（Partitioner）**：提高数据分布的均匀性
+
+​	•	**自定义排序器（Comparator）**：优化 Reduce 阶段的处理效率
+
+​	•	**Combiner 的使用**：在本地聚合中间数据，减少网络传输
+
+​	•	**输入输出格式（InputFormat/OutputFormat）**：选择和自定义数据格式以提升性能
+
+---
+
+
+
+#### 2.2.6 日志分析
+
+​	•	查看 Hadoop 提供的 Job 历史日志
+
+​	•	分析 Map 和 Reduce 阶段的任务细节
 
 ### **2.3 YARN（Yet Another Resource Negotiator）**
+
+**YARN** 是 Hadoop 的 **资源管理框架**，用于分配和管理集群中的计算资源（如 CPU 和内存），它可以同时支持多种计算框架（如 MapReduce、Spark、Flink 等）
+
+**与 HDFS 和 MapReduce 的关系**
+
+​	•	**依赖 HDFS：** YARN 管理的计算任务通常会处理存储在 HDFS 中的数据。
+
+​	•	**管理 MapReduce：** MapReduce 是运行在 YARN 上的一个计算框架，YARN 提供资源支持并监控其任务执行。
+
+​	•	**支持多种框架：** 除了 MapReduce，YARN 还可以运行其他计算框架（如 Spark）。
+
+---
+
+
 
 ​	•	**YARN 的架构**
 
@@ -975,24 +1624,6 @@ hadoop fs -mkdir /
 
 
 
-**学习时间分配建议**
-
-
-
-**阶段**	**内容**	**时间建议**
-
-基础知识	分布式计算与 Hadoop 入门	2 天 
-
-核心组件	HDFS、MapReduce、YARN	5-7 天
-
-Hadoop 生态系统	Hive、HBase、Sqoop 等工具学习	5 天
-
-高级优化与安全	集群优化、容错与监控	3 天
-
-实践项目	实现至少 1 个综合性小项目	3-5 天
-
-
-
 **总结**
 
-这套学习框架涵盖了 Hadoop 的理论、实践和优化方法，帮助你从零开始系统学习，最终实现实际项目的开发。如果你需要详细的学习计划或某部分内容的深入讲解，请告诉我！
+这套学习框架涵盖了 Hadoop 的理论、实践和优化方法，帮助你从零开始系统学习，最终实现实际项目的开发。
