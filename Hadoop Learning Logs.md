@@ -1370,11 +1370,19 @@ hadoop jar ~/WordCountProject/classes/wordcount.jar WordCount <input_path> <outp
 
 ​	•	<output_path> 是 HDFS 上的输出路径。
 
+注意：如果你的 WordCount 类在 .java 文件中声明了 package，那么运行命令时，需要指定主类的完整类名，包括包名:
+
+```bash
+hadoop jar "/Users/sscc/Desktop/personal/Career_skills/Hadoop/WordCountProject/classes/wordcount.jar" WordCountProject.src.WordCount /user/sscc/input /user/sscc/output
+```
 
 
-例如：
 
-hadoop jar ~/WordCountProject/classes/wordcount.jar WordCount /user/ssc/input /user/ssc/output
+---
+
+**Tips：**如果输入路径是一个文件夹，Hadoop 会自动处理该文件夹中的所有文件。
+
+---
 
 
 
@@ -1382,11 +1390,71 @@ hadoop jar ~/WordCountProject/classes/wordcount.jar WordCount /user/ssc/input /u
 
 输出结果会保存在 HDFS 的 <output_path> 目录下，可以通过以下命令查看结果文件：
 
-hadoop fs -ls /user/ssc/output
+```bash
+hadoop fs -ls /user/sscc/output
+```
 
-hadoop fs -cat /user/ssc/output/part-r-00000
+```bash
+Found 2 items
+-rw-r--r--   1 sscc supergroup          0 2025-01-13 14:36 /user/sscc/output/_SUCCESS
+-rw-r--r--   1 sscc supergroup        109 2025-01-13 14:36 /user/sscc/output/part-r-00000
+```
 
+```bash
+hadoop fs -cat /user/sscc/output/part-r-00000
+```
 
+```bash
+and	1
+apple	1
+blue	1
+bottle	1
+boy	3
+chips	1
+exercise	1
+fish	1
+handsome	1
+health	1
+orange	1
+sausage	1
+water	3
+```
+
+此时的目录结构：
+
+```bash
+WordCountProject
+.
+├── bin
+├── classes
+│   ├── WordCountProject
+│   │   └── src
+│   │       ├── WordCount$WordMapper.class
+│   │       ├── WordCount$WordReducer.class
+│   │       └── WordCount.class
+│   └── wordcount.jar
+├── lib
+│   ├── hadoop-common-3.4.1-tests.jar
+│   ├── hadoop-common-3.4.1.jar
+│   ├── hadoop-hdfs-3.4.1-tests.jar
+│   ├── hadoop-hdfs-3.4.1.jar
+│   ├── hadoop-hdfs-client-3.4.1-tests.jar
+│   ├── hadoop-hdfs-client-3.4.1.jar
+│   ├── hadoop-hdfs-httpfs-3.4.1.jar
+│   ├── hadoop-hdfs-native-client-3.4.1-tests.jar
+│   ├── hadoop-hdfs-native-client-3.4.1.jar
+│   ├── hadoop-hdfs-nfs-3.4.1.jar
+│   ├── hadoop-hdfs-rbf-3.4.1-tests.jar
+│   ├── hadoop-hdfs-rbf-3.4.1.jar
+│   └── hadoop-mapreduce-client-core-3.4.1.jar
+├── src
+│   └── WordCount.java
+└── testfile.txt
+
+7 directories, 19 files
+```
+
+至此完成。
 
 **总结**
 
