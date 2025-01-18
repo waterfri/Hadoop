@@ -1,4 +1,4 @@
-# Hadoop Learning Logs
+#  Hadoop Learning Logs
 
 started from 2024.12.27
 
@@ -552,8 +552,6 @@ ssh-copy-id user@hostname
 #### 1.3.2 伪分布式模式配置
 
 #### 1.3.3 全分布式模式集群搭建
-
-
 
 
 
@@ -1454,7 +1452,7 @@ WordCountProject
 7 directories, 19 files
 ```
 
-至此完成。
+至此完成！
 
 **总结**
 
@@ -1498,7 +1496,9 @@ WordCountProject
 
 ### **2.3 YARN（Yet Another Resource Negotiator）**
 
-**YARN** 是 Hadoop 的 **资源管理框架**，用于分配和管理集群中的计算资源（如 CPU 和内存），它可以同时支持多种计算框架（如 MapReduce、Spark、Flink 等）
+**YARN** 是 Hadoop 的 **资源管理框架**，用于分配和管理集群中的计算资源（如 CPU 和内存），它**分离了资源管理和作业调度**的功能，提升了集群资源的利用率和作业的执行效率。它可以**同时支持多种计算框架**（如 MapReduce、Spark、Flink 等）
+
+MapReduce 是一个计算框架，MapReduce 作业以 YARN 作业形式运行，**YARN 可运行多种作业，而不仅是 MapReduce**
 
 **与 HDFS 和 MapReduce 的关系**
 
@@ -1512,23 +1512,173 @@ WordCountProject
 
 
 
-​	•	**YARN 的架构**
+#### 2.3.1 YARN 的架构
 
-​	•	ResourceManager 和 NodeManager 的功能
+YARN 的架构包括以下几个关键组件：
 
-​	•	ApplicationMaster 的工作流程
+**ResourceManager (RM)**
 
-​	•	**YARN 工作原理**
+​	•	资源调度与分配的核心组件。
+
+​	•	包含两个主要子模块：
+
+​	•	**Scheduler**: 按需分配资源，不负责任务监控与执行。
+
+​	•	**ApplicationManager**: 负责管理应用程序生命周期。
+
+**NodeManager (NM)**
+
+​	•	每个集群节点的守护进程。
+
+​	•	负责容器（Container）的管理、资源监控和任务执行。
+
+**ApplicationMaster (AM)**
+
+​	•	每个应用程序独立的资源与任务管理者。
+
+​	•	与 ResourceManager 和 NodeManager 协作。
+
+**Container**
+
+​	•	YARN 的资源分配单元，包含 CPU、内存等资源。
+
+**YARN Timeline Server**
+
+​	•	提供任务运行历史的记录和查询服务。
+
+
+
+#### 2.3.2 YARN 工作原理
 
 ​	•	资源分配与任务调度
 
 ​	•	多种框架在 YARN 上运行（Spark、Hive 等）
 
-​	•	**YARN 高级功能**
+​	•	YARN的工作流程
+
+---
+
+**资源分配与任务调度**
+
+​	•	**资源分配**:
+
+YARN 的核心是 **ResourceManager** 和 **NodeManager**。
+
+​	•	ResourceManager 负责全局资源分配与调度。
+
+​	•	NodeManager 负责节点资源管理和任务的具体执行。
+
+​	•	**资源模型**:
+
+YARN 使用 **Container** 作为资源分配的最小单位，一个 Container 包含一部分 CPU、内存等资源。
+
+​	•	**调度器**:
+
+YARN 提供了多种调度器（FIFO 调度器、容量调度器、公平调度器），可以根据不同需求灵活配置资源分配策略。
+
+​	•	**任务调度**:
+
+​	•	当用户提交作业时，YARN 启动一个 **ApplicationMaster (AM)**，负责管理该作业的生命周期。
+
+​	•	ApplicationMaster 会向 ResourceManager 请求资源（Container）。
+
+​	•	ResourceManager 分配资源后，ApplicationMaster 与 NodeManager 协作，在分配的 Container 中启动任务。
+
+---
+
+**多种框架在 YARN 上运行**
+
+YARN 的灵活性使其可以运行多种计算框架，不局限于 MapReduce:
+
+​	•	**Spark**:
+
+Spark 是基于内存计算的快速大数据处理框架。通过 YARN 提供的资源管理，Spark 作业可以高效调度和执行。
+
+​	•	**Hive**:
+
+Hive 提供类 SQL 的数据分析功能，可以在 YARN 上运行，将 SQL 转换为 MapReduce 或 Tez 作业。
+
+​	•	**Tez**:
+
+Tez 是一个 DAG（有向无环图）计算框架，优化了 MapReduce 作业的性能。
+
+​	•	**Flink**:
+
+Flink 是一个支持实时流处理和批处理的框架，也可以依赖 YARN 来分配资源。
+
+​	•	**HBase**:
+
+HBase 是基于 Hadoop 的分布式数据库，可以通过 YARN 提供资源支持其 RegionServer 的管理。
+
+---
+
+**YARN的工作流程**
+
+1. **提交应用程序**：用户提交作业，客户端向 ResourceManager 发送请求。
+
+2. **ResourceManager 分配资源**：ResourceManager 启动 ApplicationMaster 并为其分配资源。
+
+3. **启动 ApplicationMaster**：ApplicationMaster 在容器内运行，向 ResourceManager 请求更多资源。
+
+4. **NodeManager 启动容器**：NodeManager 分配计算资源并启动容器来运行任务。
+
+5. **任务执行与监控**：ApplicationMaster 监控任务执行，并与 NodeManager 协调。
+
+6. **资源释放与作业完成**：任务完成后，资源被释放，作业状态反馈给 ResourceManager。
+
+7. **容错与恢复**：如果容器失败，ResourceManager 会重新调度资源。
+
+---
+
+
+
+#### 2.3.3 YARN 高级功能
 
 ​	•	YARN 容错机制
 
 ​	•	YARN 集群监控工具（如 ResourceManager UI）
+
+---
+
+**YARN 容错机制**
+
+YARN 的容错机制确保了集群的高可用性和任务的可靠性。其核心容错机制包括以下几个方面：
+
+​	•	**ResourceManager 容错**
+
+**ResourceManager** 是 YARN 的资源管理和调度的核心组件，但它的单点故障可能导致整个集群的资源调度瘫痪。为此，YARN 引入了 **ResourceManager 高可用性（HA）** 机制，通过配置两个 ResourceManager 节点（一个为活跃，另一个为备用），在活跃节点发生故障时，备用节点会自动接管，确保服务不中断。
+
+​	•	**NodeManager 容错**
+
+**NodeManager** 是 YARN 的节点管理者，负责节点的资源管理和监控。NodeManager 本身也具有容错机制。如果某个 NodeManager 节点发生故障，ResourceManager 会重新调度该节点上的任务，尽量将任务迁移到其他可用的 NodeManager 节点上。
+
+​	•	**ApplicationMaster 容错**
+
+**ApplicationMaster** 负责管理每个应用的生命周期，若某个 ApplicationMaster 宕机或失败，YARN 会尝试重新启动新的 ApplicationMaster。这样可以保证即使应用的 Master 失败，应用本身仍然能够继续运行。
+
+---
+
+**YARN 集群监控工具**
+
+为了有效地管理和监控 YARN 集群，YARN 提供了多种监控工具，帮助用户查看集群状态、资源使用情况以及各个作业的执行情况。
+
+​	•	**ResourceManager UI**：
+
+**ResourceManager UI** 是 YARN 提供的 Web 界面，用于展示集群资源的使用情况和各个应用的状态。在这个 UI 中，用户可以查看到集群中所有节点的资源使用情况、运行的应用程序、应用的资源分配情况等详细信息。
+
+通过 ResourceManager UI，用户还可以查看每个任务的日志、执行的详细信息，便于排查问题和进行性能调优。
+
+​	•	**NodeManager UI**：
+
+每个 **NodeManager** 节点也有自己的 Web 界面，显示该节点的资源使用情况、当前运行的容器以及容器的详细信息。NodeManager UI 可以帮助管理员了解每个节点的资源利用率和任务执行情况。
+
+​	•	**YARN Timeline Server**：
+
+**Timeline Server** 是 YARN 提供的一个用于收集和查看 YARN 应用程序历史信息的服务。通过 Timeline Server，用户可以查看历史应用的执行日志、容器信息、资源利用率等，有助于调试和优化集群中的作业。
+
+​	•	**YARN ResourceManager 日志**：
+
+YARN 会记录关于集群资源管理的详细日志，这些日志包括了作业调度、资源分配、任务执行等信息。通过分析这些日志，可以帮助管理员识别潜在问题，并对集群进行优化。
 
 
 
